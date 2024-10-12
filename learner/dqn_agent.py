@@ -15,7 +15,7 @@ class Agent():
 
     def __init__(self, state_size, action_size, seed = 0, 
                  replay_buffer_size = int(1e5), replay_batch_size = 64, update_every = 4,
-                 target_gamma = 0.99, update_tau = 1e-3, lr = 5e-4, 
+                 future_discount = 0.99, update_tau = 1e-3, lr = 5e-4, 
                  use_double_q = False, 
                  use_priorized_replay = False, prioritized_replay_eps = 0.001, prioritized_replay_alpha = 0.5):
         """Initialize an Agent object.
@@ -31,7 +31,7 @@ class Agent():
         self.replay_batch_size = replay_batch_size
         self.replay_buffer_size = replay_buffer_size
         self.update_every = update_every
-        self.target_gamma = target_gamma
+        self.future_discount = future_discount
         self.update_tau = update_tau
         self.lr = lr
         self.use_double_q = use_double_q
@@ -81,7 +81,7 @@ class Agent():
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > self.replay_batch_size:
                 experiences = self.memory.sample(self.use_priorized_replay)
-                self.__learn(experiences, self.target_gamma, self.use_double_q)
+                self.__learn(experiences, self.future_discount, self.use_double_q)
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy.
@@ -115,7 +115,7 @@ class Agent():
         else:
             Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states 
-        Q_targets = rewards + (self.target_gamma * Q_targets_next * (1 - dones))
+        Q_targets = rewards + (self.future_discount * Q_targets_next * (1 - dones))
 
         # Get expected Q values from local model
         Q_expected = self.qnetwork_local(states).gather(1, actions)
